@@ -99,27 +99,30 @@ def main_title(s):
 
 def variants(s):
     """Shorter forms of a name to try as the needle: without (edition) brackets, the
-    main title before a subtitle, the subtitle alone, the leading two words of a long title."""
+    main title before a subtitle, the subtitle alone. Each is (needle, strict) where
+    strict means "only match against the book folder + file, not the author folder"."""
     bare = re.sub(r"\(.*?\)|\[.*?\]", " ", s or "")
     parts = re.split(r"\s*[:\u2013\u2014]\s+|\s+-\s+|\.\s+", bare, 1)
-    out = [s, bare] + parts
-    for v in list(out):
+    out = [(v, False) for v in [s, bare] + parts]
+    for v, _ in list(out):                # leading two words of a long title
         n = norm(v)
         if len(n) >= 4:
-            out.append(" ".join(n[:2]))
+            out.append((" ".join(n[:2]), True))
     return out
 
 
-def agrees(a, b):
+def agrees(a, b, b_strict=None):
     """True if the two names describe the same book: most significant words of one
-    (or of a shorter variant of it) occur in the other. Symmetric."""
-    for x, y in ((a, b), (b, a)):
-        h = set(norm(y))
-        for needle in variants(x):
+    (or of a shorter variant of it) occur in the other. Symmetric. `b_strict` is a
+    narrower form of `b` (book folder + file, without the author folder) used for the
+    weakest variants so an author's name in the path can't vouch for a wrong title."""
+    for x, y, ys in ((a, b, b_strict), (b_strict if b_strict is not None else b, a, None)):
+        h, hs = set(norm(y)), set(norm(ys)) if ys is not None else set(norm(y))
+        for needle, strict in variants(x):
             n = norm(needle)
             if not n:
                 return True               # nothing to compare against
-            if sum(1 for w in n if w in h) / len(n) >= 0.6:
+            if sum(1 for w in n if w in (hs if strict else h)) / len(n) >= 0.6:
                 return True
     return False
 
@@ -157,8 +160,9 @@ def audit(lib, show_all):
             book_tag = album or ttl
             tag_books.add(" ".join(norm(main_title(book_tag))))
             name = f"{folder} {fname}"      # author/series/book folders + file name
-            abs_ok = agrees(title, name)
-            tag_ok = bool(book_tag) and agrees(book_tag, name)
+            short = f"{os.path.basename(folder)} {fname}"    # book folder + file only
+            abs_ok = agrees(title, name, short)
+            tag_ok = bool(book_tag) and agrees(book_tag, name, short)
             flags = []
             if not book_tag:
                 verdict = "no-tag"
