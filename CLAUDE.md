@@ -11,6 +11,10 @@ dependencies. Validation means running Kometa against a real Plex server. The RE
 primary documentation and is written for end users; keep it in sync when changing config
 behaviour.
 
+The series setup is derived from
+[book-tools/audnexus-kometa-series](https://github.com/book-tools/audnexus-kometa-series).
+Keep that credit in the README (intro and Credits section) when editing.
+
 ## Commands
 
 ```
