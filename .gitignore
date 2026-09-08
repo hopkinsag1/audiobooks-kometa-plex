@@ -1,0 +1,6 @@
+*.bak*
+config.yml
+*.token
+__pycache__/
+*.csv
+*.json

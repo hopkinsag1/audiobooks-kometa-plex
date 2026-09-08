@@ -1,0 +1,34 @@
+# Minimal Kometa config.yml for the audiobook collections in this repo.
+# Merge the `libraries` entries into your existing config if you already run Kometa.
+
+libraries:
+  Audiobooks:                                   # <- your Plex audiobook library name
+    collection_files:
+      - file: config/audiobooks.yml
+    operations:
+      delete_collections:                       # clean up collections Kometa made that are now empty
+        managed: true
+        configured: false
+        less: 1
+    settings:
+      asset_directory:
+        - config/assets/audiobooks
+      minimum_items: 2                          # hides series collections that only hold 1 book
+      delete_below_minimum: true                # ...and removes them if a book is deleted
+
+  Audiobooks Narrators:                         # same Plex library, second pass with a higher minimum
+    library_name: Audiobooks                    # <- must match the Plex library name above
+    collection_files:
+      - file: config/narrators.yml
+    settings:
+      asset_directory:
+        - config/assets/audiobooks
+      minimum_items: 5                          # a narrator needs 5+ books to get a collection
+      delete_below_minimum: true
+
+plex:
+  url: http://192.168.1.2:32400                 # local URL of your Plex server
+  token: REPLACE_WITH_PLEX_TOKEN
+
+tmdb:
+  apikey: REPLACE_WITH_TMDB_API_KEY             # not used for audiobooks, but Kometa requires it

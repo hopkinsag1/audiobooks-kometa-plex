@@ -1,0 +1,110 @@
+# audiobooks.yml — genre buckets, series collections, featured/admin smart collections.
+# Loaded by the main audiobook library entry in config.yml. Narrator collections live in
+# narrators.yml, loaded by a second library mapping with its own minimum_items (see README).
+templates:
+  audiobooks:                 # series template; any: so addons-merged series moods OR together
+    builder_level: album
+    smart_filter:
+      limit: 1000
+      sort_by: title.asc
+      any:
+        album_mood: <<value>>
+    sort_title: "!20_<<collection_name>>"
+    # single-book series are hidden via settings.minimum_items: 2 + delete_below_minimum in config.yml
+
+  genre:                      # <<value>> is a LIST when addons merge sub-genres -> use any:
+    builder_level: album
+    smart_filter:
+      limit: 1000
+      sort_by: title.asc
+      any:
+        album_genre: <<value>>
+    sort_title: "!10_<<collection_name>>"
+
+dynamic_collections:
+  Audiobook Genres:
+    type: album_genre
+    title_format: <<key_name>>
+    template: genre
+    include:                  # only these become collections; everything else is ignored
+      - Fantasy
+      - Science Fiction
+      - Mystery
+      - Thriller & Suspense
+      - Horror
+      - Romance
+      - Historical Fiction
+      - Literary Fiction
+      - Classics
+      - Action & Adventure
+      - War & Military
+      - Comedy & Humor
+      - Kids & Teens
+      - Biographies & Memoirs
+      - History
+      - Business & Careers
+      - Self-Help & Wellness
+      - Politics & Social Sciences
+      - Science & Technology
+      - Short Stories & Anthologies
+      - Movie, TV & Game Tie-Ins
+    addons:                   # sub-genres folded into the parent bucket (Audible's category names)
+      Fantasy: [Epic, Paranormal & Urban, Urban, Fantasy & Magic, Sword & Sorcery, Dragons & Mythical Creatures, Magical Realism]
+      Science Fiction: [Cyberpunk, Space Opera, Hard Science Fiction, First Contact, Dystopian, Post-Apocalyptic, Space Exploration, Time Travel, Genetic Engineering, Alternate History, Steampunk]
+      Mystery: [Women Sleuths, Private Investigators, Police Procedurals, Amateur Sleuths, Cozy, Traditional Detectives, International Mystery & Crime, Hard-Boiled, Crime Fiction]
+      Thriller & Suspense: [Suspense, Psychological, Crime Thrillers, Technothrillers, Domestic Thrillers, Spies & Politics, Espionage, Serial Killers, Political, Legal, Medical, Terrorism]
+      Horror: [Supernatural, Occult, Ghosts, Paranormal, Gothic, Scary Stories]
+      Romance: [Romantic Comedy, Romantic Suspense, Regency]
+      Historical Fiction: [Historical]
+      Comedy & Humor: [Humorous, Dark Humor, Satire, Absurdist]
+      War & Military: [Military, World War II & Holocaust, Military Science]
+      Kids & Teens: [Children's Audiobooks, Teen & Young Adult, Growing Up & Facts of Life, Coming of Age, Fairy Tales, "Fairy Tales, Folk Tales & Myths", Chapter Books]
+      Business & Careers: [Management & Leadership, Career Success, Personal Success, Leadership, Business Development & Entrepreneurship, Entrepreneurship, Management, Money & Finance]
+      Self-Help & Wellness: ["Relationships, Parenting & Personal Development", Personal Development, Health & Wellness, Psychology & Mental Health, Psychology, Motivation & Self-Improvement, Mental Health, Social & Life Skills, Communication & Social Skills, Relationships, Stress Management]
+      Politics & Social Sciences: [Social Sciences, Politics & Government, Philosophy, Sociology, Economics]
+      Science & Technology: [Science & Engineering, Science, Computers & Technology, Biological Sciences, Biology, Physics, Computer Science]
+      Short Stories & Anthologies: [Anthologies & Short Stories, Anthologies, Short Stories, Collections]
+      Movie, TV & Game Tie-Ins: ["Movie, TV & Video Game Tie-Ins"]
+
+  Audiobook Series:           # one collection per 'Series: X' mood tag from Audnexus
+    type: album_mood
+    title_format: <<key_name>>
+    remove_prefix: 'Series: '
+    template: audiobooks
+    addons:                   # OPTIONAL: merge Audible's duplicate/typo series names. These are
+                              # examples from one library — replace with your own or delete.
+      "Series: His Dark Materials": ["Series: His Dark Materialsik"]
+      "Series: Practical Magic": ["Series: The Practical Magic Series"]
+      "Series: The Mistborn Saga": ["Series: Trilogía Original Mistborn"]
+      "Series: Harry Potter": ["Series: Wizarding World Collection", "Series: Harry Potter (Full-Cast Editions)"]
+      "Series: The Chronicles of Narnia (Publication Order)": ["Series: The Chronicles of Narnia (Author's Preferred Order)"]
+      "Series: A Jack Ryan Novel (publication order)": ["Series: A Jack Ryan Novel (chronological order)", "Series: Jack Ryan (publication order) (abridged)"]
+
+collections:
+  Top Rated Audiobooks:
+    builder_level: album
+    smart_filter:
+      limit: 100
+      sort_by: critic_rating.desc
+      all:
+        album_critic_rating.gte: 9.6
+    sort_title: "!01_Top Rated"
+  Recently Added Audiobooks:
+    builder_level: album
+    smart_filter:
+      limit: 50
+      sort_by: added.desc
+      all:
+        album_added: 90        # days
+    sort_title: "!02_Recently Added"
+  Needs Metadata (admin):     # books Plex flags as unmatched -> invisible to every collection above
+    builder_level: album
+    visible_library: false
+    visible_home: false
+    visible_shared: false
+    smart_filter:
+      limit: 1000
+      sort_by: title.asc
+      all:
+        album_unmatched: true
+    sort_title: "!99_Needs Metadata"

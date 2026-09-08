@@ -1,0 +1,20 @@
+# Narrator collections — loaded by the "Audio Books Narrators" library mapping in config.yml.
+# No include list: every narrator (album Style tag) is a candidate, and that mapping's
+# settings.minimum_items: 5 + delete_below_minimum: true keep only narrators with 5+ books.
+templates:
+  narrator:
+    builder_level: album
+    smart_filter:
+      limit: 1000
+      sort_by: title.asc
+      all:
+        album_style: <<value>>
+    sort_title: "!30_<<collection_name>>"
+
+dynamic_collections:
+  Narrators:
+    type: album_style
+    title_format: "Narrated by <<key_name>>"
+    template: narrator
+    title_override:
+      "full cast": "Full Cast Productions"   # Plex exposes this style key lowercased
