@@ -1,6 +1,7 @@
-# Kometa audiobook collections (Genres, Series, Narrators)
+# audiobooks-kometa-plex
 
-Kometa configuration for a Plex audiobook library that uses the
+Genre, Series and Narrator collections for a Plex audiobook library, built with
+[Kometa](https://github.com/Kometa-Team/Kometa) on top of the
 [Audnexus metadata agent](https://github.com/djdembeck/Audnexus.bundle).
 It turns the tags Audnexus writes on every book into browsable collections:
 

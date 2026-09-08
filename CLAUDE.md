@@ -4,6 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## What this repo is
 
+`audiobooks-kometa-plex` (https://github.com/hopkinsag1/audiobooks-kometa-plex):
 Kometa configuration (YAML) plus one stdlib-only Python tool for a Plex audiobook library that
 uses the Audnexus metadata agent. There is no build, no test suite, no linter, and no
 dependencies. Validation means running Kometa against a real Plex server. The README is the
