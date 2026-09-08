@@ -139,6 +139,39 @@ Notes:
   Audible, podcasts (Audnexus rejects them even when Audible lists them).
 - The match call needs a `name` parameter or Plex answers HTTP 400.
 
+## Tool: audit Audiobookshelf tags vs file names
+
+If you organise the same files with [Audiobookshelf](https://www.audiobookshelf.org/), a
+tagger that dies halfway can leave embedded tags that name a different book than the file,
+and Plex (which matches from those tags) then matches the wrong Audnexus record.
+`tools/abs_tag_audit.py` asks the Audiobookshelf API for every item's folder, files,
+embedded tags and metadata, and writes one row per file that disagrees. It is read-only.
+
+```
+export ABS_URL=http://192.168.1.224:13378
+export ABS_TOKEN=...                       # Audiobookshelf -> Settings -> Users -> API token
+python3 tools/abs_tag_audit.py --library "Audio Books"        # writes tag_audit.csv
+```
+
+The folder/file name is taken as the reference, and the `verdict` column says which side
+disagrees with it:
+
+| verdict | meaning | fix in Audiobookshelf |
+|---|---|---|
+| `abs-wrong` | file and tag agree, Audiobookshelf shows another book | Edit → Match, pick the right book |
+| `tag-wrong` | file and Audiobookshelf agree, the tag names another book | item → Manage → Embed Metadata |
+| `abs+tag-wrong` | tag is wrong and Audiobookshelf copied it | Match, then Embed Metadata |
+| `all-differ` | all three disagree (often a foreign-language file) | look yourself |
+| `stray-file` | one folder holds files tagged as different books | move the stray file out |
+| `no-tag` | file has no album/title tag | Embed Metadata |
+
+`duplicate` in the `flags` column means another item shows the same title and author. Two
+editions of one book are fine; five folders all called *The Two Towers* are not.
+
+Rescan the Audiobookshelf library first if files were changed since its last scan: the
+tags it reports are the ones it read at scan time. After repairing, rescan in Plex, refresh
+metadata on the affected albums, and rerun `match_audnexus.py propose`.
+
 ## Credits
 
 - [Kometa](https://github.com/Kometa-Team/Kometa)

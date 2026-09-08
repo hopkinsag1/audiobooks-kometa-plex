@@ -27,6 +27,9 @@ kometa --run --run-libraries "Audiobooks Narrators"
 python3 tools/match_audnexus.py --library "Audiobooks" propose            # read-only, writes pairings.csv
 python3 tools/match_audnexus.py --library "Audiobooks" apply  pairings.csv
 python3 tools/match_audnexus.py --library "Audiobooks" verify pairings.csv
+
+# Audit Audiobookshelf tags vs file names (needs ABS_URL and ABS_TOKEN in env; read-only)
+python3 tools/abs_tag_audit.py --library "Audio Books"                    # writes tag_audit.csv
 ```
 
 Note the argument order: `--library` is a top-level flag and must come before the subcommand.
@@ -86,3 +89,14 @@ only for HIGH rows. The match PUT requires a `name` parameter or Plex returns HT
 When reading album tags from Plex, note that the `/library/sections/<id>/all` listing is
 truncated (2 genres, no moods or styles); the tool fetches `/library/metadata/<k1>,<k2>,...`
 in batches of 40 to get full detail.
+
+### tools/abs_tag_audit.py
+
+Read-only audit of an Audiobookshelf library through its REST API (`/api/libraries/<id>/items`
+paged, then `/api/items/<id>?expanded=1` per item for `media.audioFiles[].metaTags` and
+`media.metadata`). The folder/file name is the reference; each file gets a `verdict`
+(`abs-wrong`, `tag-wrong`, `abs+tag-wrong`, `all-differ`, `stray-file`, `no-tag`) saying which
+side disagrees with it. Name comparison is deliberately loose (subtitles, brackets, apostrophes
+and plurals are ignored, and Audiobookshelf's separate `subtitle` field is appended to the
+title) because the failure mode being hunted is "a completely different book", not spelling.
+The tool never writes to Audiobookshelf; repairs are done in its UI (Match / Embed Metadata).
