@@ -60,7 +60,7 @@ Every collection is a smart filter over album-level tags Audnexus writes:
 
 Genres use a curated `include` list plus `addons` that fold Audible sub-genres into ~20
 buckets, because a real library has ~300 distinct genre tags. Narrators have no include list;
-the 5-book threshold does the filtering. Series get one collection per mood tag with
+the 5-book threshold does the filtering, plus an `exclude` list for full-cast actors. Series get one collection per mood tag with
 `remove_prefix: 'Series: '`.
 
 ### Template rules that are easy to break
@@ -68,11 +68,16 @@ the 5-book threshold does the filtering. Series get one collection per mood tag 
 - **Use `any:` not `all:` in templates whose `<<value>>` can be a list.** When `addons`
   merges tags (genre sub-genres, duplicate series names), `<<value>>` becomes a list and
   `all:` ANDs them, producing "Plex Error: No items for smart filter".
-- **`sort_title` prefixes define the Collections tab order**: `!01_`/`!02_` featured,
+- **`sort_title` prefixes define the Collections tab order**: `!01_`–`!03_` featured,
   `!10_` genres, `!20_` series, `!30_` narrators, `!99_` admin. Keep new collections in
   this scheme.
 - **Genre names containing commas must be quoted** inside YAML flow lists.
-- **Plex lowercases some style keys** (`full cast`); handle with `title_override`.
+- **Plex lowercases some style keys** (`full cast`); use that spelling in `exclude` and filters.
+- **Editions are un-merged series tags**, renamed with `title_override` (keys include the
+  `Series: ` prefix), e.g. Harry Potter (Jim Dale) / (Full Cast). Do not fold an edition's
+  series tag into `addons`.
+- **Full-cast casts are excluded from narrators by name** (`exclude` in `narrators.yml`), and
+  the `full cast` tag feeds the `!03_` Full Cast & Dramatized collection instead.
 - The series `addons` block in `audiobooks.yml` contains example merges from one library
   and is meant to be replaced by users.
 

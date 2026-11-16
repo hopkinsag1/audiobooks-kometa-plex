@@ -9,8 +9,9 @@ It turns the tags Audnexus writes on every book into browsable collections:
 |---|---|---|
 | **Genres** | Audible's category tree (album *Genre* tags) | ~20 curated buckets: Fantasy, Science Fiction, Mystery, Thriller & Suspense, Horror, Romance, Kids & Teens, Biographies & Memoirs, Self-Help, ... Sub-genres like *Cyberpunk* or *Cozy* roll up into their parent. |
 | **Series** | `Series: X` mood tags | One collection per series, sorted in reading order. Single-book series are hidden until a second book arrives. Audible's duplicate series names can be merged. |
-| **Narrators** | album *Style* tags | "Narrated by X" for every narrator with 5+ books in your library. Fully automatic: crosses the line, gets a collection; drops below, it goes away. |
-| **Featured** | ratings, added date | *Top Rated Audiobooks*, *Recently Added Audiobooks*. |
+| **Narrators** | album *Style* tags | "Narrated by X" for every narrator with 5+ books in your library. Automatic: crosses the line, gets a collection; drops below, it goes away. Cast members of full-cast series are excluded by name. |
+| **Editions** | separate `Series: X` tags per recording | Side-by-side collections when you own one series in two recordings, e.g. *Harry Potter (Jim Dale)* and *Harry Potter (Full Cast)*. |
+| **Featured** | ratings, added date, cast | *Top Rated Audiobooks*, *Recently Added Audiobooks*, *Full Cast & Dramatized*. |
 | **Admin** | Plex unmatched flag | A hidden *Needs Metadata* collection so you can find books that never matched Audnexus. |
 
 The Series part is based on the excellent
@@ -88,6 +89,20 @@ quoted inside a YAML flow list (`"Mystery, Thriller & Suspense"`).
 The `addons` block under *Audiobook Series* merges them. The entries shipped here are examples
 from one library; replace them with yours or delete the block.
 
+**Editions.** When you own a series in two recordings and Audible gives each its own series
+tag (*Harry Potter* and *Harry Potter (Full-Cast Editions)*), do not merge them in `addons`.
+Rename each with `title_override` under *Audiobook Series* and they sort next to each other.
+`exclude` drops umbrella tags such as *Wizarding World Collection* that would only repeat one
+of them. `title_override` and `exclude` keys are the full tag, including the `Series: ` prefix.
+
+**Full cast.** Audnexus has no single tag for ensemble productions, so *Full Cast & Dramatized*
+ORs three things: the `full cast` narrator tag, title markers (*(Full-Cast*, *(Dramatized*,
+*Original Drama*) and a short list of series tags. Plex matches title words from their first
+character, punctuation included, so a marker that sits inside brackets must be written with
+the bracket: `Dramatized` finds nothing, `(Dramatized` does. Add a series tag there when a full-cast
+production has neither marker. In `narrators.yml`, add the cast of any long full-cast series to
+`exclude`, or every actor in a 7-book cast gets a "Narrated by" collection.
+
 **Thresholds.** Series minimum (`minimum_items: 2`) and narrator minimum (`minimum_items: 5`)
 live in `config.yml`. *Top Rated* uses `album_critic_rating.gte: 9.6` because Audible ratings
 run hot (a quarter of a typical library sits above 9.4).
@@ -98,11 +113,15 @@ alphabetical soup. Change or remove the prefixes if you prefer.
 
 ## Gotchas learned the hard way
 
-- **`any:` not `all:` for merged series.** The original series guide uses `all:`. Once you
-  merge two series names with `addons`, `<<value>>` becomes a list and `all:` ANDs the two
-  moods together, giving *"Plex Error: No items for smart filter"*. `any:` ORs them.
-- **Style keys can be lowercased.** Plex exposes the narrator tag *Full cast* as `full cast`.
-  `title_override` handles it (→ *Full Cast Productions*).
+- **`any:` not `all:` in every tag template.** The original series guide uses `all:`. Once you
+  merge two tags with `addons` (series names, narrator name variants), `<<value>>` becomes a
+  list and `all:` ANDs them together, giving *"Plex Error: No items for smart filter"*.
+  `any:` ORs them.
+- **Style keys can be lowercased.** Plex exposes the narrator tag *Full cast* as `full cast`;
+  use that spelling in `exclude` and in smart filters.
+- **Renamed collections leave the old one behind.** Kometa makes the new title and stops
+  managing the old one, but `delete_collections` here only removes empty ones. Delete the old
+  collection in Plex after renaming or un-merging.
 - **Narrator names can leak into genres.** A few Audnexus records put the narrator in the
   Genre list. The curated `include` list makes this harmless.
 - **The `/all` list view is truncated.** Plex returns only 2 genres and no styles/moods in

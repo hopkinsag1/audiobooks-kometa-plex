@@ -1,4 +1,4 @@
-# Narrator collections — loaded by the "Audio Books Narrators" library mapping in config.yml.
+# Narrator collections — loaded by the "Audiobooks Narrators" library mapping in config.yml.
 # No include list: every narrator (album Style tag) is a candidate, and that mapping's
 # settings.minimum_items: 5 + delete_below_minimum: true keep only narrators with 5+ books.
 templates:
@@ -7,7 +7,7 @@ templates:
     smart_filter:
       limit: 1000
       sort_by: title.asc
-      all:
+      any:                    # any: so a narrator merged via addons (name variants) ORs together
         album_style: <<value>>
     sort_title: "!30_<<collection_name>>"
 
@@ -16,5 +16,15 @@ dynamic_collections:
     type: album_style
     title_format: "Narrated by <<key_name>>"
     template: narrator
-    title_override:
-      "full cast": "Full Cast Productions"   # Plex exposes this style key lowercased
+    exclude:                  # not narrators in the "Narrated by" sense
+      - "full cast"           # covered by Full Cast & Dramatized in audiobooks.yml (key is lowercased by Plex)
+      # Cast members of full-cast series: a 7-book cast puts every actor over the 5-book line.
+      # Add names here when a new ensemble series does the same.
+      - Hugh Laurie
+      - Matthew Macfadyen
+      - Riz Ahmed
+      - Michelle Gomez
+      - Cush Jumbo
+      - Mark Addy
+      - Simon Pegg
+      - James McAvoy

@@ -76,9 +76,15 @@ dynamic_collections:
       "Series: His Dark Materials": ["Series: His Dark Materialsik"]
       "Series: Practical Magic": ["Series: The Practical Magic Series"]
       "Series: The Mistborn Saga": ["Series: Trilogía Original Mistborn"]
-      "Series: Harry Potter": ["Series: Wizarding World Collection", "Series: Harry Potter (Full-Cast Editions)"]
       "Series: The Chronicles of Narnia (Publication Order)": ["Series: The Chronicles of Narnia (Author's Preferred Order)"]
       "Series: A Jack Ryan Novel (publication order)": ["Series: A Jack Ryan Novel (chronological order)", "Series: Jack Ryan (publication order) (abridged)"]
+    # EDITIONS: when Audible gives each recording of a series its own series tag, leave the tags
+    # un-merged and just rename them, so every edition gets its own collection side by side.
+    title_override:           # keys are the full mood tag, before remove_prefix
+      "Series: Harry Potter": "Harry Potter (Jim Dale)"
+      "Series: Harry Potter (Full-Cast Editions)": "Harry Potter (Full Cast)"
+    exclude:                  # umbrella tags that would only duplicate a collection above
+      - "Series: Wizarding World Collection"
 
 collections:
   Top Rated Audiobooks:
@@ -97,6 +103,20 @@ collections:
       all:
         album_added: 90        # days
     sort_title: "!02_Recently Added"
+  Full Cast & Dramatized:     # ensemble productions; Audnexus has no single tag for them, so OR
+    builder_level: album      # together the 'full cast' narrator tag, title markers and series
+    smart_filter:
+      limit: 1000
+      sort_by: title.asc
+      any:
+        album_style: full cast               # Plex stores this narrator tag lowercased
+        # Plex matches title words from their first character, punctuation included, so a
+        # marker inside brackets needs the bracket: "Dramatized" finds nothing, "(Dramatized" does.
+        album_title: ["Full Cast", "(Full-Cast", "(Dramatized", "[Dramatized", "Original Drama"]
+        album_mood:                          # full-cast series whose titles don't say so
+          - "Series: Harry Potter (Full-Cast Editions)"
+          - "Series: The Sandman"
+    sort_title: "!03_Full Cast & Dramatized"
   Needs Metadata (admin):     # books Plex flags as unmatched -> invisible to every collection above
     builder_level: album
     visible_library: false
