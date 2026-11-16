@@ -266,6 +266,86 @@ def cmd_plan(args):
 
 # ---------- build ----------
 
+def tidy_chapter_titles(titles, book_title):
+    """Readable chapter names from file-derived ones.
+
+    Players show these as-is, and rips often carry codes ("STORMLIGHT0301P04") or repeat the book
+    title in every chapter ("The Boys [Volume 02] [03]", "04 Book (Label) - Chapter 01 - Name").
+    Leading track numbers and a shared prefix that is a code or contains the book title are
+    dropped; whatever is left that is only a number becomes "Part N".
+    """
+    if not any((t or "").strip() for t in titles):
+        return [f"Part {i + 1}" for i in range(len(titles))]
+    if len(titles) < 2:
+        return titles
+    # a merged book can mix codes with per-part "Chapter 1..6" that repeat: number the lot
+    coded = any(len(t) >= 6 and re.fullmatch(r"[A-Za-z_.-]*\d[A-Za-z0-9_.-]*", t) for t in titles)
+    if coded or len(set(titles)) <= len(titles) / 2:
+        return [f"Part {i + 1}" for i in range(len(titles))]
+    # "04: Chapter 01 - Name" on every chapter, counting 1..n, is the track number: drop it
+    nums = [re.match(r"\s*(\d{1,3})\s*[:.-]\s+(\S.*)$", t) for t in titles]
+    if all(nums) and [int(m.group(1)) for m in nums] == list(range(1, len(titles) + 1)):
+        titles = [m.group(2).strip() for m in nums]
+    stripped = [re.sub(r"^\s*\d{1,3}[\s._-]+(?=\D)", "", t).strip() or t for t in titles]
+    prefix = os.path.commonprefix(stripped)
+    code = " " not in prefix.strip() and re.fullmatch(r"[A-Za-z0-9_.-]{4,}", prefix.strip() or " ")
+    book_title = re.split(r":| - ", book_title)[0]          # "The Boys: Volume 2" -> "The Boys"
+    named = len(norm(book_title)) > 2 and norm(book_title) in norm(prefix)
+    if not (code or named):
+        return titles
+    if named:                                   # cut back to a separator so words stay whole
+        m = re.match(r".*(?: - |: |\] ?|\) ?)", prefix)
+        cut = len(m.group(0)) if m and norm(book_title) in norm(m.group(0)) else len(prefix)
+    else:
+        cut = len(prefix)
+    out = []
+    for i, t in enumerate(stripped):
+        rest = t[cut:].strip(" -:[]()")
+        if not rest or re.fullmatch(r"\W*[A-Za-z]?\d+\W*", rest):
+            num = re.search(r"(\d+)\W*$", t)
+            rest = f"Part {int(num.group(1))}" if num else f"Part {i + 1}"
+        out.append(rest)
+    return out if len(set(out)) == len(out) else titles
+
+
+def audible_chapters(asins, file_durs):
+    """Audible's chapter marks for the book's part(s), fitted onto the source audio, or None.
+
+    Only used when the timings can be trusted: either each source file lines up with one Audible
+    part (within 1.5%), or the whole book's length matches all parts end to end (within 1%).
+    """
+    parts = []
+    for asin in asins:
+        try:
+            req = urllib.request.Request(f"https://api.audnex.us/books/{asin}/chapters?region={REGION}",
+                                         headers={"User-Agent": "build_m4b/1.0"})
+            with urllib.request.urlopen(req, timeout=30) as r:
+                d = json.load(r)
+        except Exception:
+            return None
+        ch = [(c["startOffsetMs"] / 1000, c["lengthMs"] / 1000, c.get("title") or "") for c in d.get("chapters", [])]
+        if not ch or not d.get("runtimeLengthMs"):
+            return None
+        parts.append((d["runtimeLengthMs"] / 1000, ch))
+    if not parts:
+        return None
+    total_src, total_aud = sum(file_durs), sum(rt for rt, _ in parts)
+    if len(parts) == len(file_durs) and all(abs(fd - rt) <= max(60, 0.015 * rt) for fd, (rt, _) in zip(file_durs, parts)):
+        spans = file_durs                                  # one part per file: fit each part to its file
+    elif abs(total_src - total_aud) <= max(60, 0.01 * total_aud):
+        spans = [rt * total_src / total_aud for rt, _ in parts]
+    else:
+        return None
+    out, offset = [], 0.0
+    for span, (rt, ch) in zip(spans, parts):
+        k = span / rt
+        for start, length, title in ch:
+            out.append((offset + start * k, offset + min((start + length) * k, span), title or f"Chapter {len(out) + 1}"))
+        offset += span
+    out[-1] = (out[-1][0], total_src, out[-1][2])
+    return out
+
+
 def esc(v):
     return re.sub(r"([=;#\\\n])", r"\\\1", str(v))
 
@@ -301,6 +381,16 @@ def cmd_build(args):
                 t = tags_of(p).get("title") or os.path.splitext(os.path.basename(f))[0]
                 chapters.append((offset, offset + dur, clean_title(t) if len(b["files"]) > 1 else b["title"]))
             offset += dur
+        chapters = [(s_, e_, t_) for (s_, e_, _), t_ in
+                    zip(chapters, tidy_chapter_titles([c[2] for c in chapters], b["title"]))]
+
+        # coarse source marks (over 30 minutes each on average): use Audible's if they fit and are finer.
+        # "chapters_from" in the plan forces "source" or "audible"; default is this automatic choice.
+        want, marks = b.get("chapters_from", "auto"), "source"
+        if want != "source" and b.get("asins"):
+            aud = audible_chapters(b["asins"], [float(probes[f]["format"]["duration"]) for f in b["files"]])
+            if aud and (want == "audible" or (offset / len(chapters) > 1800 and len(aud) >= 1.5 * len(chapters))):
+                chapters, marks = aud, "audible"
 
         meta = [";FFMETADATA1", f"title={esc(display)}", f"album={esc(display)}", f"artist={esc(b['author'])}",
                 f"album_artist={esc(b['author'])}", "genre=Audiobook"]
@@ -348,7 +438,7 @@ def cmd_build(args):
         if cover:
             cmd += ["-i", r.outp(cover)]
             maps += ["-map", "2:v:0", "-c:v", "copy", "-disposition:v:0", "attached_pic"]
-        print(f"  build {name}  [{len(b['files'])} file(s), {len(chapters)} chapters, {how}] ...", flush=True)
+        print(f"  build {name}  [{len(b['files'])} file(s), {len(chapters)} chapters from {marks}, {how}] ...", flush=True)
         p = r.tool("ffmpeg", cmd + maps + ["-movflags", "+faststart", r.outp(target)], check=False)
         if p.returncode:
             print(f"    FAILED: {p.stderr[-600:]}")

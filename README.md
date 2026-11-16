@@ -186,7 +186,12 @@ python3 tools/build_m4b.py publish m4b_plan.json --staging /downloads/staging --
   Audible for cast, series and ASIN, and compares the summed part runtimes with your files.
   `--title`/`--author` force a whole folder into one book when the tags are a mess.
 - `build` stream-copies AAC (no quality loss) and re-encodes anything else to AAC. Chapters
-  are the sources' own marks, shifted into place, or one per file when a file has none. It
+  are the sources' own marks, shifted into place, or one per file when a file has none. When
+  those are coarse (over 30 minutes each on average) and Audible's chapter marks for the same
+  parts fit the audio's length, Audible's finer marks are used instead; set `chapters_from` to
+  `source` or `audible` on a book in the plan to force either. Chapter names are what players
+  such as Prologue show in the chapter list, so file codes and repeated book titles are cleaned
+  up (`STORMLIGHT0301P04` and `The Boys [Volume 02] [04]` both become `Part 4`). It
   writes `<Author>/<Title> (Dramatized Adaptation)/` with that same album tag, which is what
   keeps Plex from merging the book into your narrated copy and what the collections key on.
 - `publish` moves the folders into the library (never over an existing one), then scans and
@@ -229,6 +234,25 @@ editions of one book are fine; five folders all called *The Two Towers* are not.
 Rescan the Audiobookshelf library first if files were changed since its last scan: the
 tags it reports are the ones it read at scan time. After repairing, rescan in Plex, refresh
 metadata on the affected albums, and rerun `match_audnexus.py propose`.
+
+## Tool: where Plex and Audiobookshelf disagree
+
+If you run both servers over the same files, they drift: each is matched separately, so one
+can hold a different edition, narrator or series for the same book. `tools/plex_abs_diff.py`
+pairs books by folder (the path relative to each library root) and reports the differences.
+It is read-only on both sides.
+
+```bash
+export PLEX_URL=http://192.168.1.2:32400 PLEX_TOKEN=xxxx
+export ABS_URL=http://192.168.1.2:13378 ABS_TOKEN=xxxx
+python3 tools/plex_abs_diff.py --plex-library "Audiobooks" --abs-library "Audiobooks"   # writes plex_abs_diff.csv
+```
+
+The `differs` column lists what disagrees: `title`, `author`, `narrators` (no narrator in
+common, or one side has none), `series`, `asin` (matched to different Audible listings),
+`runtime` (more than 2% apart), `unmatched` (no Audnexus match in Plex), `split-in-plex` (one
+folder, several Plex albums) and `only-plex` / `only-abs`. A different ASIN alone is often the
+same recording under two listings; a different ASIN with different narrators is a wrong edition.
 
 ## Credits
 

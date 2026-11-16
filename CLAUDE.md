@@ -33,6 +33,9 @@ python3 tools/build_m4b.py --ssh root@nas plan "<download folder>"        # writ
 python3 tools/build_m4b.py build   m4b_plan.json --out <staging>
 python3 tools/build_m4b.py publish m4b_plan.json --staging <staging> --library <library> --abs-library "Audio Books" --plex-library "Audio Books"
 
+# Report where Plex and Audiobookshelf disagree (needs all four env vars; read-only)
+python3 tools/plex_abs_diff.py --plex-library "Audio Books" --abs-library "Audio Books"   # writes plex_abs_diff.csv
+
 # Audit Audiobookshelf tags vs file names (needs ABS_URL and ABS_TOKEN in env; read-only)
 python3 tools/abs_tag_audit.py --library "Audio Books"                    # writes tag_audit.csv
 ```
@@ -114,10 +117,22 @@ over ssh inside a throwaway container (source mounted read-only as `/in`, output
 as the output folder's owner. `plan` groups audio files into books by album tag / folder with
 part markers stripped, and sums the Audible runtimes of every listing whose cleaned title
 matches to get a confidence. `build` writes an FFMETADATA file with tags and chapters and
-stream-copies AAC or re-encodes to AAC. The output album tag and folder end in
+stream-copies AAC or re-encodes to AAC. Chapter names come from the sources and pass through
+`tidy_chapter_titles` (players show them verbatim); coarse source marks are replaced by
+Audnexus chapter marks when those fit the audio (`audible_chapters`). The output album tag and folder end in
 `(Dramatized Adaptation)`; the Kometa templates depend on that marker. `publish` matches in
 Audiobookshelf and Plex with the first part's ASIN, then resets the title to the merged
 book's own. It refuses to run against a missing folder because docker would create it.
+
+### tools/plex_abs_diff.py
+
+Read-only. Pairs Plex albums with Audiobookshelf items by folder relative to each library
+root (Plex track file paths vs ABS `relPath`), then compares title, author, narrators (Plex
+Style vs ABS narrators), series (Plex `Series: ` moods vs ABS series), ASIN and runtime.
+Comparisons are loose on purpose (subtitles, brackets, "no name in common") to surface wrong
+editions, not spelling. Prologue shows a Plex album's title, author, Style as "Narrated by",
+genres, year, studio, summary and the file's embedded chapter names; that is the field list a
+future ABS-to-Plex mirror should write.
 
 ### tools/abs_tag_audit.py
 
