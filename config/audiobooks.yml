@@ -108,7 +108,8 @@ dynamic_collections:
     remove_prefix: 'Series: '
     template: dramatized
     exclude:
-      - "Series: Maasverse"   # umbrella tag; the per-series dramatized collections cover it
+      - "Series: Maasverse"   # umbrella tags; the per-series dramatized collections cover them
+      - "Series: The Cosmere"
 
 collections:
   Top Rated Audiobooks:
