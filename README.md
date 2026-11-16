@@ -265,6 +265,9 @@ same recording under two listings; a different ASIN with different narrators is 
 > for any item without an ASIN), a dramatized edition with no Audible listing of its own gets
 > overwritten with the narrated edition's title, narrators and cover a few minutes after import.
 > Correct the item in Audiobookshelf and leave an ASIN on it so it is not matched again, then mirror.
+> ReadMeABook has no setting to turn this off. For a book with no Audible listing at all, put a
+> placeholder such as `NO-AUDIBLE-LISTING` in the item's ASIN field; any non-empty value makes it
+> skip the item, and the tools here ignore values that are not a 10-character ASIN.
 
 Books Audible does not carry (or that never matched) have no narrators, series, genres or
 summary in Plex, so they sit outside every collection. If Audiobookshelf has those details,

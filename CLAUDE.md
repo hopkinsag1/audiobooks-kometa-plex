@@ -139,7 +139,9 @@ Read-only. Pairs Plex albums with Audiobookshelf items by folder relative to eac
 root (Plex track file paths vs ABS `relPath`), then compares title, author, narrators (Plex
 Style vs ABS narrators), series (Plex `Series: ` moods vs ABS series), ASIN and runtime.
 Comparisons are loose on purpose (subtitles, brackets, "no name in common") to surface wrong
-editions, not spelling. Prologue shows a Plex album's title, author, Style as "Narrated by",
+editions, not spelling. An Audiobookshelf ASIN that is not 10 characters of `[A-Z0-9]` is read as
+empty: books with no Audible listing carry the placeholder `NO-AUDIBLE-LISTING` so ReadMeABook
+does not fuzzy-match them. Prologue shows a Plex album's title, author, Style as "Narrated by",
 genres, year, studio, summary and the file's embedded chapter names; that is the field list a
 future ABS-to-Plex mirror should write.
 

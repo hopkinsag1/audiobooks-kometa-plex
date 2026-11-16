@@ -81,11 +81,14 @@ def abs_books(url, token, library):
         m = it["media"]["metadata"]
         rel = it["relPath"] if not it.get("isFile") else os.path.dirname(it["relPath"]) or it["relPath"]
         series = [re.sub(r"\s+#[\w.\-]+$", "", s).strip() for s in (m.get("seriesName") or "").split(", ") if s.strip()]
+        asin = (m.get("asin") or "").strip()
+        if not re.fullmatch(r"[A-Z0-9]{10}", asin):     # a placeholder such as NO-AUDIBLE-LISTING is not an edition
+            asin = ""
         books[rel] = {"id": it["id"], "title": m.get("title") or "", "author": m.get("authorName") or "",
                       "narrators": [n.strip() for n in (m.get("narratorName") or "").split(", ") if n.strip()],
                       "genres": m.get("genres") or [], "summary": m.get("description") or "",
                       "studio": m.get("publisher") or "", "year": str(m.get("publishedYear") or ""),
-                      "series": series, "asin": m.get("asin") or "", "min": round((it["media"].get("duration") or 0) / 60)}
+                      "series": series, "asin": asin, "min": round((it["media"].get("duration") or 0) / 60)}
     return books
 
 
