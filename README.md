@@ -254,6 +254,28 @@ common, or one side has none), `series`, `asin` (matched to different Audible li
 folder, several Plex albums) and `only-plex` / `only-abs`. A different ASIN alone is often the
 same recording under two listings; a different ASIN with different narrators is a wrong edition.
 
+## Tool: mirror Audiobookshelf into Plex
+
+Books Audible does not carry (or that never matched) have no narrators, series, genres or
+summary in Plex, so they sit outside every collection. If Audiobookshelf has those details,
+`tools/abs_to_plex.py` copies them to the Plex album and locks them. It also proposes a
+re-match where the two servers hold different Audible listings, but only when Audible's
+runtime for Audiobookshelf's listing fits your files and Plex's does not.
+
+```bash
+python3 tools/abs_to_plex.py --plex-library "Audiobooks" --abs-library "Audiobooks" plan    # dry run, writes abs_to_plex.csv
+#   review the `apply` column and the `note` column
+python3 tools/abs_to_plex.py --plex-library "Audiobooks" --abs-library "Audiobooks" apply abs_to_plex.csv
+```
+
+`plan` changes nothing. `apply` writes to Plex only. Rows are held back (`apply=no`) when
+Audiobookshelf's own match looks wrong (title, author or runtime disagree with Plex), and
+narrators are skipped for a dramatized or full-cast album that Audiobookshelf lists with one
+or two narrators, since that is the narrated edition's credit. Albums matched to the same
+listing on both sides are left to Audnexus. Run `plan` again afterwards: it should propose
+nothing. Audiobookshelf's genres are Audible's top-level categories (`Science Fiction &
+Fantasy`), so add them to the genre `addons` if you want filled books in the genre buckets.
+
 ## Credits
 
 - [Kometa](https://github.com/Kometa-Team/Kometa)

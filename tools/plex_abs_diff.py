@@ -66,6 +66,8 @@ def plex_books(url, token, library):
                 "key": k, "title": a.get("title", ""), "author": a.get("parentTitle", ""),
                 "narrators": [x["tag"] for x in a.get("Style", [])],
                 "series": [x["tag"][8:] for x in a.get("Mood", []) if x["tag"].startswith("Series: ")],
+                "genres": [x["tag"] for x in a.get("Genre", [])], "moods": [x["tag"] for x in a.get("Mood", [])],
+                "summary": a.get("summary") or "", "studio": a.get("studio") or "", "year": str(a.get("year") or ""),
                 "asin": m.group(1) if m else "", "min": round(dur[k] / 60000)})
     return books
 
@@ -73,7 +75,7 @@ def plex_books(url, token, library):
 def abs_books(url, token, library):
     h = {"Authorization": "Bearer " + token}
     lib = next(l["id"] for l in get(url + "/api/libraries", h)["libraries"] if l["name"] == library)
-    items = get(f"{url}/api/libraries/{lib}/items?limit=0&minified=1", h)["results"]
+    items = get(f"{url}/api/libraries/{lib}/items?limit=0", h)["results"]
     books = {}
     for it in items:
         m = it["media"]["metadata"]
@@ -81,6 +83,8 @@ def abs_books(url, token, library):
         series = [re.sub(r"\s+#[\w.\-]+$", "", s).strip() for s in (m.get("seriesName") or "").split(", ") if s.strip()]
         books[rel] = {"id": it["id"], "title": m.get("title") or "", "author": m.get("authorName") or "",
                       "narrators": [n.strip() for n in (m.get("narratorName") or "").split(", ") if n.strip()],
+                      "genres": m.get("genres") or [], "summary": m.get("description") or "",
+                      "studio": m.get("publisher") or "", "year": str(m.get("publishedYear") or ""),
                       "series": series, "asin": m.get("asin") or "", "min": round((it["media"].get("duration") or 0) / 60)}
     return books
 

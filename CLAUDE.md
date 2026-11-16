@@ -36,6 +36,10 @@ python3 tools/build_m4b.py publish m4b_plan.json --staging <staging> --library <
 # Report where Plex and Audiobookshelf disagree (needs all four env vars; read-only)
 python3 tools/plex_abs_diff.py --plex-library "Audio Books" --abs-library "Audio Books"   # writes plex_abs_diff.csv
 
+# Mirror Audiobookshelf details into Plex for unmatched albums (plan is a dry run; apply writes to Plex only)
+python3 tools/abs_to_plex.py --plex-library "Audio Books" --abs-library "Audio Books" plan    # writes abs_to_plex.csv
+python3 tools/abs_to_plex.py --plex-library "Audio Books" --abs-library "Audio Books" apply abs_to_plex.csv
+
 # Audit Audiobookshelf tags vs file names (needs ABS_URL and ABS_TOKEN in env; read-only)
 python3 tools/abs_tag_audit.py --library "Audio Books"                    # writes tag_audit.csv
 ```
@@ -133,6 +137,17 @@ Comparisons are loose on purpose (subtitles, brackets, "no name in common") to s
 editions, not spelling. Prologue shows a Plex album's title, author, Style as "Narrated by",
 genres, year, studio, summary and the file's embedded chapter names; that is the field list a
 future ABS-to-Plex mirror should write.
+
+### tools/abs_to_plex.py
+
+`plan` (dry run, CSV) → `apply` (Plex only). Imports `plex_abs_diff` for the folder pairing.
+`fill` rows are Plex albums without an Audnexus GUID: Style, Mood (`Series: <name>`), Genre,
+studio, year and summary are copied from Audiobookshelf with
+`PUT /library/sections/<id>/all?type=9&id=<key>&style[0].tag.tag=..&style.locked=1&summary.value=..`.
+`rematch` rows compare Audnexus `runtimeLengthMin` for both ASINs with the album's track
+durations. Guards: no copy when title/author/runtime disagree (ABS itself is mismatched), no
+narrators for ensemble titles with two or fewer ABS narrators. It must stay idempotent: a
+second `plan` after `apply` proposes nothing.
 
 ### tools/abs_tag_audit.py
 
