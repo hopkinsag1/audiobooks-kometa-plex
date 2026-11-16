@@ -152,7 +152,8 @@ studio, year and summary are copied from Audiobookshelf with
 `rematch` rows compare Audnexus `runtimeLengthMin` for both ASINs with the album's track
 durations. Guards: no copy when title/author/runtime disagree (ABS itself is mismatched), no
 narrators for ensemble titles with two or fewer ABS narrators. It must stay idempotent: a
-second `plan` after `apply` proposes nothing.
+second `plan` after `apply` proposes nothing. Setting `field[i].tag.tag` only adds tags, so
+`apply` reads the album first and removes stale ones with `field[].tag.tag-=<names>`.
 
 ### tools/abs_tag_audit.py
 

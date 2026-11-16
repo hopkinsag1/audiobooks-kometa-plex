@@ -261,6 +261,11 @@ same recording under two listings; a different ASIN with different narrators is 
 
 ## Tool: mirror Audiobookshelf into Plex
 
+> If another tool auto-matches new Audiobookshelf items (ReadMeABook's recently-added check does,
+> for any item without an ASIN), a dramatized edition with no Audible listing of its own gets
+> overwritten with the narrated edition's title, narrators and cover a few minutes after import.
+> Correct the item in Audiobookshelf and leave an ASIN on it so it is not matched again, then mirror.
+
 Books Audible does not carry (or that never matched) have no narrators, series, genres or
 summary in Plex, so they sit outside every collection. If Audiobookshelf has those details,
 `tools/abs_to_plex.py` copies them to the Plex album and locks them. It also proposes a
@@ -273,7 +278,8 @@ python3 tools/abs_to_plex.py --plex-library "Audiobooks" --abs-library "Audioboo
 python3 tools/abs_to_plex.py --plex-library "Audiobooks" --abs-library "Audiobooks" apply abs_to_plex.csv
 ```
 
-`plan` changes nothing. `apply` writes to Plex only. Rows are held back (`apply=no`) when
+`plan` changes nothing. `apply` writes to Plex only, and removes tags the album has that
+Audiobookshelf no longer lists, so a second `plan` proposes nothing. Rows are held back (`apply=no`) when
 Audiobookshelf's own match looks wrong (title, author or runtime disagree with Plex), and
 narrators are skipped for a dramatized or full-cast album that Audiobookshelf lists with one
 or two narrators, since that is the narrated edition's credit. Albums matched to the same

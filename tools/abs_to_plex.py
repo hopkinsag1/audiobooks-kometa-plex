@@ -130,9 +130,14 @@ def cmd_apply(args, env):
                 put(f"/library/metadata/{r['plex_key']}/match?guid={urllib.parse.quote(guid, safe='')}&name={urllib.parse.quote(r['plex_title'])}")
             else:
                 q = [("type", "9"), ("id", r["plex_key"])]
+                now = diff.get(f"{url}/library/metadata/{r['plex_key']}", h)["MediaContainer"]["Metadata"][0]
                 for col, field in (("set_narrators", "style"), ("set_series", "mood"), ("set_genres", "genre")):
                     if r[col]:
-                        q += [(f"{field}[{i}].tag.tag", v) for i, v in enumerate(r[col].split(SEP))] + [(f"{field}.locked", "1")]
+                        new = r[col].split(SEP)
+                        q += [(f"{field}[{i}].tag.tag", v) for i, v in enumerate(new)] + [(f"{field}.locked", "1")]
+                        stale = [x["tag"] for x in now.get(field.capitalize(), []) if x["tag"] not in new]
+                        if stale:               # setting tags only adds; the ones no longer wanted are removed by name
+                            q.append((f"{field}[].tag.tag-", ",".join(urllib.parse.quote(t, safe="") for t in stale)))
                 for col, field in (("set_studio", "studio"), ("set_summary", "summary"), ("set_year", "year")):
                     if r[col]:
                         q += [(f"{field}.value", r[col]), (f"{field}.locked", "1")]
