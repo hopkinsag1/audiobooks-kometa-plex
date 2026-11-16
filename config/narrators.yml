@@ -7,8 +7,16 @@ templates:
     smart_filter:
       limit: 1000
       sort_by: title.asc
-      any:                    # any: so a narrator merged via addons (name variants) ORs together
-        album_style: <<value>>
+      all:
+        any:                  # any: so a narrator merged via addons (name variants) ORs together
+          album_style: <<value>>
+        # Ensemble productions don't count towards a narrator. Otherwise every actor in a 7-book
+        # full-cast series crosses the 5-book line and gets a "Narrated by" collection.
+        album_title.not: "(Dramatized"
+        album_style.not: full cast
+        album_mood.not:       # full-cast series whose titles and narrator tags don't say so
+          - "Series: Harry Potter (Full-Cast Editions)"
+          - "Series: The Sandman"
     sort_title: "!30_<<collection_name>>"
 
 dynamic_collections:
@@ -16,15 +24,5 @@ dynamic_collections:
     type: album_style
     title_format: "Narrated by <<key_name>>"
     template: narrator
-    exclude:                  # not narrators in the "Narrated by" sense
+    exclude:
       - "full cast"           # covered by Full Cast & Dramatized in audiobooks.yml (key is lowercased by Plex)
-      # Cast members of full-cast series: a 7-book cast puts every actor over the 5-book line.
-      # Add names here when a new ensemble series does the same.
-      - Hugh Laurie
-      - Matthew Macfadyen
-      - Riz Ahmed
-      - Michelle Gomez
-      - Cush Jumbo
-      - Mark Addy
-      - Simon Pegg
-      - James McAvoy

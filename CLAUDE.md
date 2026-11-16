@@ -28,6 +28,11 @@ python3 tools/match_audnexus.py --library "Audiobooks" propose            # read
 python3 tools/match_audnexus.py --library "Audiobooks" apply  pairings.csv
 python3 tools/match_audnexus.py --library "Audiobooks" verify pairings.csv
 
+# Build chaptered m4b files from a download and import them (plan is read-only)
+python3 tools/build_m4b.py --ssh root@nas plan "<download folder>"        # writes m4b_plan.json
+python3 tools/build_m4b.py build   m4b_plan.json --out <staging>
+python3 tools/build_m4b.py publish m4b_plan.json --staging <staging> --library <library> --abs-library "Audio Books" --plex-library "Audio Books"
+
 # Audit Audiobookshelf tags vs file names (needs ABS_URL and ABS_TOKEN in env; read-only)
 python3 tools/abs_tag_audit.py --library "Audio Books"                    # writes tag_audit.csv
 ```
@@ -76,8 +81,15 @@ the 5-book threshold does the filtering, plus an `exclude` list for full-cast ac
 - **Editions are un-merged series tags**, renamed with `title_override` (keys include the
   `Series: ` prefix), e.g. Harry Potter (Jim Dale) / (Full Cast). Do not fold an edition's
   series tag into `addons`.
-- **Full-cast casts are excluded from narrators by name** (`exclude` in `narrators.yml`), and
-  the `full cast` tag feeds the `!03_` Full Cast & Dramatized collection instead.
+- **Dramatized editions share the narrated books' series tag**, so they are split on the album
+  title: the series template has `album_title.not: "(Dramatized"` and the parallel
+  `Audiobook Series Dramatized` set builds `<Series> (Dramatized)`. Both nest `any:` inside
+  `all:` (Kometa accepts this) so addons-merged tags still OR together.
+- **Ensemble albums don't count towards narrators**: the narrator template carries
+  `album_title.not`, `album_style.not: full cast` and an `album_mood.not` list. The `full cast`
+  tag feeds the `!03_` Full Cast & Dramatized collection instead.
+- **Plex title filters match from a word's first character**, punctuation included:
+  `Dramatized` finds nothing, `(Dramatized` does.
 - The series `addons` block in `audiobooks.yml` contains example merges from one library
   and is meant to be replaced by users.
 
@@ -94,6 +106,18 @@ only for HIGH rows. The match PUT requires a `name` parameter or Plex returns HT
 When reading album tags from Plex, note that the `/library/sections/<id>/all` listing is
 truncated (2 genres, no moods or styles); the tool fetches `/library/metadata/<k1>,<k2>,...`
 in batches of 40 to get full detail.
+
+### tools/build_m4b.py
+
+`plan` → `build` → `publish`, stdlib only. A `Runner` runs ffmpeg/ffprobe either locally or
+over ssh inside a throwaway container (source mounted read-only as `/in`, output as `/out`),
+as the output folder's owner. `plan` groups audio files into books by album tag / folder with
+part markers stripped, and sums the Audible runtimes of every listing whose cleaned title
+matches to get a confidence. `build` writes an FFMETADATA file with tags and chapters and
+stream-copies AAC or re-encodes to AAC. The output album tag and folder end in
+`(Dramatized Adaptation)`; the Kometa templates depend on that marker. `publish` matches in
+Audiobookshelf and Plex with the first part's ASIN, then resets the title to the merged
+book's own. It refuses to run against a missing folder because docker would create it.
 
 ### tools/abs_tag_audit.py
 

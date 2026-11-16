@@ -7,8 +7,21 @@ templates:
     smart_filter:
       limit: 1000
       sort_by: title.asc
-      any:
-        album_mood: <<value>>
+      all:
+        any:
+          album_mood: <<value>>
+        album_title.not: "(Dramatized"       # dramatized editions get their own collection below
+    sort_title: "!20_<<collection_name>>"
+
+  dramatized:                 # the same series tag, but only the "(Dramatized Adaptation)" albums
+    builder_level: album
+    smart_filter:
+      limit: 1000
+      sort_by: title.asc
+      all:
+        any:
+          album_mood: <<value>>
+        album_title: "(Dramatized"           # with the bracket: Plex matches from a word's first character
     sort_title: "!20_<<collection_name>>"
     # single-book series are hidden via settings.minimum_items: 2 + delete_below_minimum in config.yml
 
@@ -85,6 +98,17 @@ dynamic_collections:
       "Series: Harry Potter (Full-Cast Editions)": "Harry Potter (Full Cast)"
     exclude:                  # umbrella tags that would only duplicate a collection above
       - "Series: Wizarding World Collection"
+
+  # Audible files a dramatized adaptation under the same series tag as the narrated books, so the
+  # two editions are split on the title marker instead: "X" above, "X (Dramatized)" here. A series
+  # needs 2+ dramatized books to appear (minimum_items in config.yml).
+  Audiobook Series Dramatized:
+    type: album_mood
+    title_format: <<key_name>> (Dramatized)
+    remove_prefix: 'Series: '
+    template: dramatized
+    exclude:
+      - "Series: Maasverse"   # umbrella tag; the per-series dramatized collections cover it
 
 collections:
   Top Rated Audiobooks:

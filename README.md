@@ -9,8 +9,8 @@ It turns the tags Audnexus writes on every book into browsable collections:
 |---|---|---|
 | **Genres** | Audible's category tree (album *Genre* tags) | ~20 curated buckets: Fantasy, Science Fiction, Mystery, Thriller & Suspense, Horror, Romance, Kids & Teens, Biographies & Memoirs, Self-Help, ... Sub-genres like *Cyberpunk* or *Cozy* roll up into their parent. |
 | **Series** | `Series: X` mood tags | One collection per series, sorted in reading order. Single-book series are hidden until a second book arrives. Audible's duplicate series names can be merged. |
-| **Narrators** | album *Style* tags | "Narrated by X" for every narrator with 5+ books in your library. Automatic: crosses the line, gets a collection; drops below, it goes away. Cast members of full-cast series are excluded by name. |
-| **Editions** | separate `Series: X` tags per recording | Side-by-side collections when you own one series in two recordings, e.g. *Harry Potter (Jim Dale)* and *Harry Potter (Full Cast)*. |
+| **Narrators** | album *Style* tags | "Narrated by X" for every narrator with 5+ books in your library. Automatic: crosses the line, gets a collection; drops below, it goes away. Full-cast and dramatized albums don't count, so ensemble actors never get one. |
+| **Editions** | separate `Series: X` tags, or the *(Dramatized Adaptation)* title marker | Side-by-side collections when you own one series in two recordings, e.g. *Harry Potter (Jim Dale)* / *Harry Potter (Full Cast)*, or *A Court of Thorns and Roses* / *A Court of Thorns and Roses (Dramatized)*. |
 | **Featured** | ratings, added date, cast | *Top Rated Audiobooks*, *Recently Added Audiobooks*, *Full Cast & Dramatized*. |
 | **Admin** | Plex unmatched flag | A hidden *Needs Metadata* collection so you can find books that never matched Audnexus. |
 
@@ -95,13 +95,22 @@ Rename each with `title_override` under *Audiobook Series* and they sort next to
 `exclude` drops umbrella tags such as *Wizarding World Collection* that would only repeat one
 of them. `title_override` and `exclude` keys are the full tag, including the `Series: ` prefix.
 
+**Dramatized editions.** Audible files a GraphicAudio-style dramatized adaptation under the
+*same* series tag as the narrated books, so those cannot be split by tag. Instead every series
+collection leaves out albums whose title contains `(Dramatized`, and a second dynamic set,
+*Audiobook Series Dramatized*, builds `<Series> (Dramatized)` from the same tags for any
+series with two or more such albums. This relies on the album title carrying
+*(Dramatized Adaptation)*; `tools/build_m4b.py` writes it that way.
+
 **Full cast.** Audnexus has no single tag for ensemble productions, so *Full Cast & Dramatized*
 ORs three things: the `full cast` narrator tag, title markers (*(Full-Cast*, *(Dramatized*,
 *Original Drama*) and a short list of series tags. Plex matches title words from their first
 character, punctuation included, so a marker that sits inside brackets must be written with
 the bracket: `Dramatized` finds nothing, `(Dramatized` does. Add a series tag there when a full-cast
-production has neither marker. In `narrators.yml`, add the cast of any long full-cast series to
-`exclude`, or every actor in a 7-book cast gets a "Narrated by" collection.
+production has neither marker. The narrator template in `narrators.yml` leaves the same albums
+out of every count (`album_title.not`, `album_style.not`, `album_mood.not`); otherwise every
+actor in a 7-book cast gets a "Narrated by" collection. Add a full-cast series tag to its
+`album_mood.not` list when the titles don't say *(Dramatized*.
 
 **Thresholds.** Series minimum (`minimum_items: 2`) and narrator minimum (`minimum_items: 5`)
 live in `config.yml`. *Top Rated* uses `album_critic_rating.gte: 9.6` because Audible ratings
@@ -157,6 +166,36 @@ Notes:
 - Things that will never match: Spotify/Max audio dramas, out-of-print recordings not on
   Audible, podcasts (Audnexus rejects them even when Audible lists them).
 - The match call needs a `name` parameter or Plex answers HTTP 400.
+
+## Tool: build one chaptered m4b per book from a download
+
+`tools/build_m4b.py` turns a downloaded series (GraphicAudio parts, loose mp3 tracks, or
+finished m4b files) into one tagged, chaptered `.m4b` per book and brings it into the library.
+It works in steps so nothing is written before you have seen the grouping:
+
+```
+export ABS_URL=... ABS_TOKEN=... PLEX_URL=... PLEX_TOKEN=...       # only publish needs these
+python3 tools/build_m4b.py --ssh root@nas plan "/downloads/Series (GraphicAudio)"   # read-only -> m4b_plan.json
+#   check m4b_plan.json: titles, file order, build flags. After editing titles: lookup m4b_plan.json
+python3 tools/build_m4b.py build   m4b_plan.json --out /downloads/staging
+python3 tools/build_m4b.py publish m4b_plan.json --staging /downloads/staging --library /audiobooks \
+        --abs-library "Audio Books" --plex-library "Audio Books"
+```
+
+- `plan` groups files into books (multi-part releases are merged), looks each book up on
+  Audible for cast, series and ASIN, and compares the summed part runtimes with your files.
+  `--title`/`--author` force a whole folder into one book when the tags are a mess.
+- `build` stream-copies AAC (no quality loss) and re-encodes anything else to AAC. Chapters
+  are the sources' own marks, shifted into place, or one per file when a file has none. It
+  writes `<Author>/<Title> (Dramatized Adaptation)/` with that same album tag, which is what
+  keeps Plex from merging the book into your narrated copy and what the collections key on.
+- `publish` moves the folders into the library (never over an existing one), then scans and
+  matches in Audiobookshelf and Plex using the first part's ASIN, keeping the merged title.
+- With `--ssh user@host` the files stay on that host and ffmpeg runs there in a throwaway
+  container; without it, local `ffmpeg`/`ffprobe` are used.
+
+A single long file without chapter marks stays one chapter. Books Audible does not carry
+(GraphicAudio sells some series only directly) get tags and chapters but no match.
 
 ## Tool: audit Audiobookshelf tags vs file names
 
