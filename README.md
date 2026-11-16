@@ -130,7 +130,12 @@ alphabetical soup. Change or remove the prefixes if you prefer.
   use that spelling in `exclude` and in smart filters.
 - **Renamed collections leave the old one behind.** Kometa makes the new title and stops
   managing the old one, but `delete_collections` here only removes empty ones. Delete the old
-  collection in Plex after renaming or un-merging.
+  collection in Plex after renaming, un-merging or excluding a tag.
+- **`delete_collections` needs `ignore_empty_smart_collections: false`.** By default Kometa
+  skips the `less:` test for smart collections, and every collection here is smart. The first
+  library entry does not know about the narrator collections (the second entry builds them), so
+  without that line it deletes all of them on every run and the second entry rebuilds them
+  with new Plex ids.
 - **Narrator names can leak into genres.** A few Audnexus records put the narrator in the
   Genre list. The curated `include` list makes this harmless.
 - **The `/all` list view is truncated.** Plex returns only 2 genres and no styles/moods in

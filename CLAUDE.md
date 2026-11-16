@@ -59,6 +59,11 @@ deliberate, not duplication: Kometa rejects `minimum_items` per-collection when
 `builder_level: album` is set, so the only way to give series and narrators different minimums
 is separate library entries with library-level settings. Do not merge the two files.
 
+The first entry's `delete_collections` must keep `ignore_empty_smart_collections: false`.
+Kometa's default skips the `less: 1` test for smart collections, so the narrator collections
+(unconfigured from the first entry's point of view) would be deleted and rebuilt every run.
+The cost: a non-empty collection that is no longer configured is not cleaned up automatically.
+
 ### How Audnexus tags drive the collections
 
 Every collection is a smart filter over album-level tags Audnexus writes:

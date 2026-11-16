@@ -10,6 +10,9 @@ libraries:
         managed: true
         configured: false
         less: 1
+        ignore_empty_smart_collections: false   # make less: count for smart collections too. Without it,
+                                                # every narrator collection (built by the entry below, so
+                                                # "unconfigured" here) is deleted and rebuilt on each run.
     settings:
       asset_directory:
         - config/assets/audiobooks
